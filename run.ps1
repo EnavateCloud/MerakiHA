@@ -223,8 +223,9 @@ Function Get-FWInterfaces
 
 Function Get-Subscriptions
 {
+  $ProgressPreference = "SilentlyContinue"
   Write-Output -InputObject "Enumerating all subscriptins ..."
-  $Script:ListOfSubscriptionIDs = (Get-AzureRmSubscription).SubscriptionId
+  $Script:ListOfSubscriptionIDs = (Get-AzureRmSubscription -tenantID $env:TENANTID).SubscriptionId
   Write-Output -InputObject $Script:ListOfSubscriptionIDs
 }
 
