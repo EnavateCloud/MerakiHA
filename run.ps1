@@ -83,7 +83,7 @@ Function Send-AlertMessage ($Message)
     $MailTo = $env:FWMAILTO
 
     try { Send-MailMessage -SmtpServer $MailServers[1] -From $MailFrom -To $MailTo -Subject $Message -Body $Message }
-    catch { Send-MailMessage -SmtpServer $MailServers[2] -From $MailFrom -To $MailTo -Subject $Mesage -Body $Message }
+    catch { Send-MailMessage -SmtpServer $MailServers[2] -From $MailFrom -To $MailTo -Subject $Message -Body $Message }
 }
 
 Function Test-VMStatus ($VM, $FWResourceGroup) 
@@ -114,8 +114,10 @@ Function Start-Failover
   foreach ($SubscriptionID in $Script:ListOfSubscriptionIDs){
     Set-AzureRmContext -SubscriptionId $SubscriptionID
     $RTable = @()
-    $TagValue = $env:FWUDRTAG
-    $Res = Find-AzureRmResource -TagName nva_ha_udr -TagValue $TagValue
+    $ProgressPreference = "SilentlyContinue"
+    # $res = Get-AzureRmResource -ResourceID '/subscriptions/b4c14253-406d-4579-9f19-c4d893a784ff/resourceGroups/BCICLOUD-VNET-rg/providers/Microsoft.Network/routeTables/BCICLOUD-RTTB'
+    $res = Get-AzureRmResource -ResourceID $Env:RouteTableID
+    # $Res = Find-AzureRmResource -TagName 'nva_ha_udr' -TagValue $env:FWUDRTAG
 
     foreach ($RTable in $Res)
     {
@@ -146,8 +148,14 @@ Function Start-Failover
 
     }
   }
+    # Sends Email
+    $Message = 'NVA Alert: Failover to Secondary FW2'
+    $MailServers = (Resolve-DnsName -Type MX -Name $env:FWMAILDOMAINMX).NameExchange
+    $MailFrom = $env:FWMAILFROM
+    $MailTo = $env:FWMAILTO
 
-  Send-AlertMessage -message "NVA Alert: Failover to Secondary FW2"
+    try { Send-MailMessage -SmtpServer $MailServers[1] -From $MailFrom -To $MailTo -Subject $Message -Body $Message }
+    catch { Send-MailMessage -SmtpServer $MailServers[2] -From $MailFrom -To $MailTo -Subject $Message -Body $Message }
 
 }
 
@@ -157,7 +165,9 @@ Function Start-Failback
   {
     Set-AzureRmContext -SubscriptionId $SubscriptionID
     $TagValue = $env:FWUDRTAG
-    $Res = Find-AzureRmResource -TagName nva_ha_udr -TagValue $TagValue
+    # $res = Get-AzureRmResource -ResourceID '/subscriptions/b4c14253-406d-4579-9f19-c4d893a784ff/resourceGroups/BCICLOUD-VNET-rg/providers/Microsoft.Network/routeTables/BCICLOUD-RTTB'
+    $res = Get-AzureRmResource -ResourceID $Env:RouteTableID
+    # $Res = Find-AzureRmResource -TagName nva_ha_udr -TagValue $TagValue
 
     foreach ($RTable in $Res)
     {
@@ -189,7 +199,14 @@ Function Start-Failback
     }
   }
 
-  Send-AlertMessage -message "NVA Alert: Failback to Primary FW1"
+    # Sends Email
+    $Message = 'NVA Alert: Failback to Primary FW1'
+    $MailServers = (Resolve-DnsName -Type MX -Name $env:FWMAILDOMAINMX).NameExchange
+    $MailFrom = $env:FWMAILFROM
+    $MailTo = $env:FWMAILTO
+
+    try { Send-MailMessage -SmtpServer $MailServers[1] -From $MailFrom -To $MailTo -Subject $Message -Body $Message }
+    catch { Send-MailMessage -SmtpServer $MailServers[2] -From $MailFrom -To $MailTo -Subject $Message -Body $Message }
 
 }
 
@@ -225,7 +242,7 @@ Function Get-Subscriptions
 {
   $ProgressPreference = "SilentlyContinue"
   Write-Output -InputObject "Enumerating all subscriptins ..."
-  $Script:ListOfSubscriptionIDs = (Get-AzureRmSubscription -tenantID $env:TENANTID).SubscriptionId
+  $Script:ListOfSubscriptionIDs = (Get-AzureRMSubscription -tenantID $env:TENANTID).SubscriptionId
   Write-Output -InputObject $Script:ListOfSubscriptionIDs
 }
 
@@ -233,6 +250,7 @@ Function Get-Subscriptions
 # Main code block for Azure function app                       
 #--------------------------------------------------------------------------
 
+  
 $Password = ConvertTo-SecureString $env:SP_PASSWORD -AsPlainText -Force
 $Credential = New-Object System.Management.Automation.PSCredential ($env:SP_USERNAME, $Password)
 $AzureEnv = Get-AzureRmEnvironment -Name $env:AZURECLOUD
@@ -330,7 +348,14 @@ elseif (-not ($FW1Down) -and ($FW2Down))
 elseif (($FW1Down) -and ($FW2Down))
 {
   Write-Output -InputObject 'Both FW1 and FW2 Down - Manual recovery action required'
-  Send-AlertMessage -message "NVA Alert: Both FW1 and FW2 Down - Manual recovery action is required"
+    # Sends Email
+    $Message = 'NVA Alert: Both FW1 and FW2 Down - Manual recovery action is required'
+    $MailServers = (Resolve-DnsName -Type MX -Name $env:FWMAILDOMAINMX).NameExchange
+    $MailFrom = $env:FWMAILFROM
+    $MailTo = $env:FWMAILTO
+
+    try { Send-MailMessage -SmtpServer $MailServers[1] -From $MailFrom -To $MailTo -Subject $Message -Body $Message }
+    catch { Send-MailMessage -SmtpServer $MailServers[2] -From $MailFrom -To $MailTo -Subject $Message -Body $Message }
 }
 else
 {
